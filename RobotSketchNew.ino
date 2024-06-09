@@ -1,11 +1,11 @@
 #include <MeMegaPi.h>
 #define motorSpeed 200
+#define craneEndstopSens 5
+#define craneMotorSpeed 50
 
 // https://forum.makeblock.com/t/programming-ultimate-2-0-gripper/19956
 
 // TODO 
-// write crane up and down 
-// - since we only have relative position of motor, we can detect mechanical limits of the crane motion by checking the current speed of the motor / the distnace the motor has traveled since last x time. if it is low then you have reached the mechanical limit
 // calibrate motors for distance and rotation on carpet
 
 
@@ -53,11 +53,55 @@ void setup() {
 }
 
 void loop() {
-  craneMotor.run(100);
-  craneMotor.delay(1000);
-  craneMotor.stop();
-  Serial.println(count1);
+  craneDown();
+  exit(0);
 }
+
+void craneDown()
+{
+  long count1Prev = count1;  // Initialize count1Prev with the current count1
+  craneMotor.run(-craneMotorSpeed);
+  
+  while (true)
+  {
+    delay(100); // Adjust delay as needed
+
+    if (abs(count1 - count1Prev) < craneEndstopSens && count1 != 0)
+    {
+      Serial.println("BREAK");
+      break;
+    }
+         
+    Serial.println(count1);
+
+    count1Prev = count1;
+  }
+  craneMotor.stop();  
+}
+
+void craneUp()
+{
+  long count1Prev = count1;  // Initialize count1Prev with the current count1
+  craneMotor.run(craneMotorSpeed);
+  
+  while (true)
+  {
+    delay(100); // Adjust delay as needed
+
+    if (abs(count1 - count1Prev) < craneEndstopSens && count1 != 0)
+    {
+      Serial.println("BREAK");
+      break;
+    }
+         
+    Serial.println(count1);
+
+    count1Prev = count1;
+  }
+  craneMotor.stop();  
+}
+
+
 
 void rotate(int degrees, char *direction)
 {
