@@ -1,40 +1,31 @@
 #include <MeMegaPi.h>
-#define motorSpeed 200
-#define craneEndstopSens 5
+#define craneEndstopSens 1
 #define craneMotorSpeed 50
 
-// https://forum.makeblock.com/t/programming-ultimate-2-0-gripper/19956
-
-// TODO 
-// calibrate motors for distance and rotation on carpet
-
-
- // left / front track motor is plugged into middle 185 rpm
- // right / back track motor is plugged into left 185 rpm
- // crane motor is plugged into right 86 rpm
-
-// crane
+// track
 const byte interruptPin1B = 18; // Port1B interrupt pin
 const byte NE1B = 31;          // Port1B comparison pin
 // track
 const byte interruptPin2B = 19; // Port2B interrupt pin
 const byte NE2B = 38;          // Port2B comparison pin
-// track
+// crane
 const byte interruptPin3B = 3; // Port3B interrupt pin
 const byte NE3B = 49;          // Port3B comparison pin
 // grabber
 const byte interruptPin4B = 2; // Port4B interrupt pin
 const byte NE4B = A1;          // Port4B comparison pin
 
-MeMegaPiDCMotor craneMotor(PORT1B);
-MeMegaPiDCMotor trackMotor1(PORT2B);
-MeMegaPiDCMotor trackMotor2(PORT3B);
-MeMegaPiDCMotor grabberMotor(PORT4B);
-
-long count = 0;
+// counter variables to tell the program the motor's position
 long count1 = 0;
+long count2 = 0;
+long count3 = 0;
 long count4 = 0;
-boolean isRunning = false;
+
+// initialize motors
+MeMegaPiDCMotor trackMotor2(PORT1B);
+MeMegaPiDCMotor trackMotor1(PORT2B);
+MeMegaPiDCMotor craneMotor(PORT3B);
+MeMegaPiDCMotor grabberMotor(PORT4B);
 
 void setup() {
     pinMode(interruptPin1B, INPUT_PULLUP);
@@ -52,61 +43,79 @@ void setup() {
     Serial.begin(9600);
 }
 
+/*
+Availible functions for you to use.
+    move(int distance, "forwards" or "backwards");
+    rotate(int degrees, "clockwise" or "counterclockwise");
+    craneDown();
+    craneUp();
+    openGrabber();
+    closeGrabber();
+    delay(int milliseconds);
+    exit(0);
+*/
+
+// THIS IS WHERE YOU WILL WRITE YOUR PROGRAM.
 void loop() {
-  craneDown();
+  move(10, "backwards");
+  delay(1000);
+  rotate(90, "clockwise");
   exit(0);
 }
 
 void craneDown()
 {
-  long count1Prev = count1;  // Initialize count1Prev with the current count1
+  long count3Prev = count3;
   craneMotor.run(-craneMotorSpeed);
   
   while (true)
   {
-    delay(100); // Adjust delay as needed
+    delay(100);
 
-    if (abs(count1 - count1Prev) < craneEndstopSens && count1 != 0)
+    // if the relative position between the last two motor states is less than craneEndstopSens
+    if (abs(count3 - count3Prev) < craneEndstopSens && count3 != 0)
     {
       Serial.println("BREAK");
       break;
     }
          
-    Serial.println(count1);
+    Serial.println(count3);
 
-    count1Prev = count1;
+    // set count3Prev to the previous motor state
+    count3Prev = count3;
   }
   craneMotor.stop();  
 }
 
 void craneUp()
 {
-  long count1Prev = count1;  // Initialize count1Prev with the current count1
+  long count3Prev = count3;
   craneMotor.run(craneMotorSpeed);
   
   while (true)
   {
-    delay(100); // Adjust delay as needed
+    delay(100); 
 
-    if (abs(count1 - count1Prev) < craneEndstopSens && count1 != 0)
+    // if the relative position between the last two motor states is less than craneEndstopSens
+    if (abs(count3 - count3Prev) < craneEndstopSens && count3 != 0)
     {
       Serial.println("BREAK");
       break;
     }
          
-    Serial.println(count1);
+    Serial.println(count3);
 
-    count1Prev = count1;
+    // set count3Prev to the previous motor state
+    count3Prev = count3;
   }
   craneMotor.stop();  
 }
 
-
-
 void rotate(int degrees, char *direction)
 {
-  count = 0;
-  int motorSpeedLocal = motorSpeed;
+  degrees /= 1.72;
+  count2 = 0;
+  int motorSpeedLocal = 180;
 
   if (strcmp(direction, "counterclockwise") == 0)
   {
@@ -116,7 +125,8 @@ void rotate(int degrees, char *direction)
   trackMotor1.run(motorSpeedLocal);
   trackMotor2.run(motorSpeedLocal);
 
-    while (abs((count) / 8) < abs(degrees))
+  // arbitrary numbers to calibrate the motor's rotation to match the friction of a given surface
+  while (abs((count2) / 8) < abs(degrees))
   {
    Serial.println("Rotating " + String(direction) + " " + String(degrees) + " degrees.");
    delay(25);
@@ -128,7 +138,7 @@ void rotate(int degrees, char *direction)
 
 void openGrabber()
 {
-  count = 0;
+  count2 = 0;
   grabberMotor.run(-100);
   delay(4000);
   grabberMotor.stop();
@@ -136,16 +146,17 @@ void openGrabber()
 
 void closeGrabber()
 {
-  count = 0;
+  count2 = 0;
   grabberMotor.run(100);
   delay(4000);
   grabberMotor.stop();
 }
 
-void move(int distance, int speed, char *direction)
+void move(int distance, char *direction)
 {
-  count = 0;
-  int motorSpeedLocal = speed;
+  distance *= 2.5;
+  count2 = 0;
+  int motorSpeedLocal = 150;
 
   if (strcmp(direction, "backwards") == 0)
   {
@@ -154,7 +165,8 @@ void move(int distance, int speed, char *direction)
   trackMotor1.run(motorSpeedLocal);
   trackMotor2.run(-motorSpeedLocal);
 
-    while (abs((count) / 8) < abs(distance))
+  // arbitrary numbers to calibrate the motor's rotation to match the friction of a given surface
+  while (abs((count2) / 8) < abs(distance))
   {
    Serial.println("Moving " + String(direction) + " " + String(distance) + " units.");
    delay(25);
@@ -164,6 +176,7 @@ void move(int distance, int speed, char *direction)
   trackMotor2.stop();
 }
 
+// attach counter variables to the outputs of the comparison pins for each motor (encoding)
 void blink1() {
     if (digitalRead(NE1B) > 0)
         count1++;
@@ -173,16 +186,16 @@ void blink1() {
 
 void blink2() {
     if (digitalRead(NE2B) > 0)
-        count++;
+        count2++;
     else
-        count--;
+        count2--;
 }
 
 void blink3() {
     if (digitalRead(NE3B) > 0)
-        count++;
+        count3++;
     else
-        count--;
+        count3--;
 }
 
 void blink4() {
