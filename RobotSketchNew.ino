@@ -57,10 +57,7 @@ Availible functions for you to use.
 
 // THIS IS WHERE YOU WILL WRITE YOUR PROGRAM.
 void loop() {
-  move(10, "backwards");
-  delay(1000);
-  rotate(90, "clockwise");
-  exit(0);
+
 }
 
 void craneDown()
