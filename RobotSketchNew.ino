@@ -110,7 +110,7 @@ void craneUp()
 
 void rotate(int degrees, char *direction)
 {
-  degrees /= 1.72;
+  degrees /= 1.8;
   count2 = 0;
   int motorSpeedLocal = 180;
 
